@@ -1,24 +1,41 @@
-DB
-
- docker run -dp 3306:3306 `
->> --name=db `
->> --network=app-network `
->> -e MYSQL_ROOT_PASSWORD='Pass@123' `
->> techtvm/mysql_techtvm `
->> mysqlId --default-authentication-plugin=mysql_native_password
+version: '3'
 
 
+services:
+    db:
+        image: techtvm/mysql_techtvm
+        container_name: db
+        restart: unless-stopped
+        environment:
+            - MYSQL_ROOT_PASSWORD=Pass@123
+        command: '--default-authentication-plugin=mysql_native_password'
+        ports:
+            - "3306:3306"
+        
+        volumes:
+            - dbdata:/var/lib/mysql
+        networks:
+            - app-network
+        
 
+    php-app:
+        depends_on:
+            - db
+        image: techtvm/php-crud-app
+        container_name: php-app
+        restart: unless-stopped
+        environment:
+            - MYSQL_DBHOST=db:3306
+            - MYSQL_DBUSER=root
+            - MYSQL_DBPASS=Pass@123
+            - MYSQL_DBNAME=php_crud
+        ports:
+            - "8081:80"
+        networks:
+            - app-network
 
-
-CRUD APP
-
-
-docker run -dp 8081:80 `
->> --name=crud-app ` 
->> --network=app-network `
->> -e MYSQL_DBHOST=db:3306 `  
->> -e MYSQL_DBUSER=root `
->> -e "MYSQL_DBPASS=Pass@123" `
->> -e MYSQL_DBNAME=php_crud `
->> techtvm/php-crud-app
+volumes:
+    dbdata:
+networks:
+    app-network:
+        driver: bridge
